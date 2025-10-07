@@ -1,0 +1,303 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+<meta charset="UTF-8">
+<title>Kanban Board</title>
+<style>
+body {
+  font-family: Arial, sans-serif;
+  background: #f0f2f5;
+  margin: 0;
+  padding: 20px;
+  font-size: 20px;
+  color: #fff;
+}
+h1 {
+  text-align: center;
+  color: #000;
+  text-shadow: 2px 2px 4px rgba(255,255,255,0.8);
+  font-size: 32px;
+}
+#controls { text-align: center; margin-bottom: 15px; }
+#clearBoard {
+  background: #dc3545;
+  color: white;
+  border: none;
+  border-radius: 8px;
+  padding: 10px 20px;
+  font-size: 18px;
+  cursor: pointer;
+}
+#clearBoard:hover { background: #b02a37; }
+form { text-align: center; margin-top: 10px; }
+input, select, button {
+  margin: 5px;
+  padding: 10px;
+  border-radius: 6px;
+  border: 1px solid #ccc;
+  font-size: 18px;
+}
+button {
+  cursor: pointer;
+  background: #007bff;
+  color: white;
+  border: none;
+  font-size: 18px;
+}
+button:hover { background: #0056b3; }
+#board {
+  display: flex;
+  justify-content: space-around;
+  gap: 20px;
+  margin-top: 20px;
+  flex-wrap: wrap;
+}
+.column {
+  flex: 1;
+  min-width: 300px;
+  background: #333;
+  border-radius: 12px;
+  padding: 10px;
+  box-shadow: 0 4px 10px rgba(0,0,0,0.3);
+}
+.column h2 {
+  text-align: center;
+  font-size: 26px;
+  color: #fff;
+  text-shadow: 2px 2px 5px rgba(0,0,0,0.6);
+}
+.task {
+  padding: 14px 18px;
+  margin: 10px 0;
+  border-radius: 10px;
+  cursor: grab;
+  color: #fff;
+  font-weight: bold;
+  font-size: 24px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  text-shadow: 1px 1px 3px rgba(0,0,0,0.7);
+  -webkit-text-stroke: 1px rgba(0,0,0,0.8);
+}
+.delete-btn {
+  margin-left: 10px;
+  background: rgba(0,0,0,0.4);
+  border: none;
+  border-radius: 50%;
+  width: 28px;
+  height: 28px;
+  color: white;
+  font-size: 18px;
+  cursor: pointer;
+}
+.delete-btn:hover { background: rgba(0,0,0,0.6); }
+/* кнопка легенди */
+#legendBtn {
+  position: fixed;
+  top: 20px;
+  right: 20px;
+  background: #007bff;
+  color: white;
+  border: none;
+  border-radius: 50px;
+  padding: 10px 16px;
+  font-size: 20px;
+  cursor: pointer;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.3);
+}
+#legendBtn:hover { background: #0056b3; }
+/* модальне вікно */
+.modal {
+  display: none;
+  position: fixed;
+  z-index: 100;
+  left: 0; top: 0;
+  width: 100%; height: 100%;
+  background-color: rgba(0,0,0,0.6);
+}
+.modal-content {
+  background-color: #222;
+  margin: 10% auto;
+  padding: 20px;
+  border-radius: 10px;
+  width: 80%;
+  max-width: 500px;
+  color: #fff;
+  box-shadow: 0 4px 10px rgba(0,0,0,0.5);
+  text-align: center;
+}
+.close {
+  float: right;
+  font-size: 28px;
+  cursor: pointer;
+}
+.close:hover { color: #f00; }
+#legendList {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 10px;
+  margin-top: 15px;
+}
+.legend-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.color-box {
+  width: 25px;
+  height: 25px;
+  border-radius: 4px;
+  border: 1px solid #ccc;
+}
+/* адаптивність */
+@media (max-width: 900px) {
+  #board {
+    flex-direction: column;
+    align-items: center;
+  }
+  .column { width: 90%; }
+}
+</style>
+</head>
+<body>
+<h1>📌 Kanban Board</h1>
+<div id="controls"><button id="clearBoard">🧹 Очистити все</button></div>
+<form id="taskForm">
+  <input type="text" id="taskTitle" placeholder="Нова задача" required>
+  <select id="operator">
+    <option value="1">Оператор 1</option>
+    <option value="2">Оператор 2</option>
+    <option value="3">Оператор 3</option>
+    <option value="4">Оператор 4</option>
+    <option value="5">Оператор 5</option>
+    <option value="6">Оператор 6</option>
+    <option value="7">Оператор 7</option>
+    <option value="8">Оператор 8</option>
+    <option value="9">Оператор 9</option>
+    <option value="10">Оператор 10</option>
+  </select>
+  <button type="submit">Додати</button>
+</form>
+<div id="board">
+  <div class="column" data-status="todo"><h2>To Do</h2><div class="tasks"></div></div>
+  <div class="column" data-status="inprogress"><h2>In Progress</h2><div class="tasks"></div></div>
+  <div class="column" data-status="done"><h2>Done</h2><div class="tasks"></div></div>
+</div>
+
+<!-- кнопка легенди + модальне вікно -->
+<button id="legendBtn">ℹ️ Легенда кольорів</button>
+<div id="legendModal" class="modal">
+  <div class="modal-content">
+    <span class="close">&times;</span>
+    <h2>Легенда кольорів</h2>
+    <div id="legendList"></div>
+  </div>
+</div>
+
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/12.3.0/firebase-app.js";
+import { getFirestore, collection, addDoc, getDocs, onSnapshot, doc, updateDoc, deleteDoc, serverTimestamp, query, orderBy } 
+from "https://www.gstatic.com/firebasejs/12.3.0/firebase-firestore.js";
+
+const firebaseConfig = {
+  apiKey: "AIzaSyAAyjPpdrT0DoxwnoKZTqBkKC8Ks7B2ALw",
+  authDomain: "kanban2-49b88.firebaseapp.com",
+  projectId: "kanban2-49b88",
+  storageBucket: "kanban2-49b88.appspot.com",
+  messagingSenderId: "670006838931",
+  appId: "1:670006838931:web:4ac2b4bfacf130e448ef66",
+  measurementId: "G-30D976Q8KW"
+};
+const app = initializeApp(firebaseConfig);
+const db = getFirestore(app);
+
+/* кольори операторів */
+const operatorColors = {
+  1:"#ffb3b3", 2:"#ffd480", 3:"#ffb3ff",
+  4:"#66a3ff", /* синій */
+  5:"#66ff99", /* зелений */
+  6:"#b3ffff", 7:"#c299ff", 
+  8:"#ff66cc", /* рожевий */
+  9:"#99ccff", 10:"#ffff99"
+};
+
+const form=document.getElementById("taskForm");
+const taskTitle=document.getElementById("taskTitle");
+const operatorSelect=document.getElementById("operator");
+const clearBtn=document.getElementById("clearBoard");
+const board=document.getElementById("board");
+
+/* додавання задачі */
+form.addEventListener("submit",async(e)=>{
+  e.preventDefault();
+  const title=taskTitle.value.trim();
+  const operator=operatorSelect.value;
+  if(title){
+    await addDoc(collection(db,"tasks"),{title,operator,status:"todo",created:serverTimestamp()});
+    taskTitle.value="";
+  }
+});
+
+/* рендер задач */
+function renderTask(task){
+  const div=document.createElement("div");
+  div.className="task";
+  div.draggable=true;
+  div.style.background=operatorColors[task.operator];
+  div.dataset.id=task.id;
+  div.innerHTML=`<span>${task.title}</span><button class="delete-btn">✖</button>`;
+  div.querySelector(".delete-btn").addEventListener("click",async()=>{
+    if(confirm(`Видалити задачу "${task.title}"?`)){
+      await deleteDoc(doc(db,"tasks",task.id));
+    }
+  });
+  div.addEventListener("dragstart",(e)=>e.dataTransfer.setData("id",task.id));
+  board.querySelector(`[data-status="${task.status}"] .tasks`).appendChild(div);
+}
+
+/* слухач Firestore */
+const q=query(collection(db,"tasks"),orderBy("created"));
+onSnapshot(q,(snapshot)=>{
+  document.querySelectorAll(".tasks").forEach((c)=>(c.innerHTML=""));
+  snapshot.forEach((docSnap)=>renderTask({id:docSnap.id,...docSnap.data()}));
+});
+
+/* перетягування */
+document.querySelectorAll(".column").forEach((col)=>{
+  col.addEventListener("dragover",(e)=>e.preventDefault());
+  col.addEventListener("drop",async(e)=>{
+    e.preventDefault();
+    const id=e.dataTransfer.getData("id");
+    const status=col.dataset.status;
+    await updateDoc(doc(db,"tasks",id),{status});
+  });
+});
+
+/* очистка всієї дошки */
+clearBtn.addEventListener("click",async()=>{
+  if(confirm("Видалити всі задачі?")){
+    const snap=await getDocs(collection(db,"tasks"));
+    snap.forEach(async(docu)=>await deleteDoc(doc(db,"tasks",docu.id)));
+  }
+});
+
+/* легенда кольорів */
+const legendBtn=document.getElementById("legendBtn");
+const legendModal=document.getElementById("legendModal");
+const closeModal=legendModal.querySelector(".close");
+const legendList=document.getElementById("legendList");
+
+Object.keys(operatorColors).forEach(num=>{
+  const item=document.createElement("div");
+  item.className="legend-item";
+  item.innerHTML=`<div class="color-box" style="background:${operatorColors[num]}"></div><span>Оператор ${num}</span>`;
+  legendList.appendChild(item);
+});
+legendBtn.addEventListener("click",()=>legendModal.style.display="block");
+closeModal.addEventListener("click",()=>legendModal.style.display="none");
+window.addEventListener("click",(e)=>{if(e.target===legendModal)legendModal.style.display="none";});
+</script>
+</body>
+</html>
